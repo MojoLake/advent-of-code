@@ -7,7 +7,7 @@ use std::cmp;
 
 fn main() -> io::Result<()> {
 
-    let mut file = File::open("in")?;
+    let mut file = File::open("tin")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     let mut grid: Vec<Vec<char>> = Vec::new();
@@ -16,6 +16,9 @@ fn main() -> io::Result<()> {
         let line: Vec<char> = line.chars().collect();
         grid.push(line);
     }
+
+    let n = grid.len();
+    let m = grid[0].len();
 
     let mut sy: i32 = 0;
     let mut sx: i32 = 0;
@@ -37,11 +40,26 @@ fn main() -> io::Result<()> {
         ('7', vec![(1, 0), (0, -1)]),
     ].to_vec().into_iter().collect();
 
+    let vector_rotations: HashMap<((i32, i32), char), (i32, i32)> = [
+        (((1, 0), '7'), (0, -1)),
+        (((0, 1), '7'), (-1, 0)),
+        (((-1, 0), '7'), (0, 1)),
+        (((0, -1), '7'), (1, 0)),
+        (((0, -1), 'J'), (-1, 0)),
+        (((1, 0), 'J'), (0, 1)),
+        (((0, 1), 'J'), (1, 0)),
+        (((-1, 0), 'J'), (0, -1)),
+        (((-1, 0), 'L'), (0, 1)),
+        (((1, 0), 'L'), (0, -1)),
+        (((0, -1), 'L'), (1, 0)),
+        (((0, 1), 'L'), (-1, 0)),
+        (((0, 1), 'F'), (1, 0)),
+        (((0, -1), 'F'), (-1, 0)),
+        (((-1, 0), 'F'), (0, -1)),
+        (((1, 0), 'F'), (0, 1)),
+    ].to_vec().into_iter().collect();
+
     let mut q: VecDeque<(i32, i32, u32)> = VecDeque::new();
-    
-    // if !['.', '-', 'F', '7'].contains(grid[sy-1][sx]) {
-    //     q.push(
-    // }
 
     let dy = [1, -1, 0, 0];
     let dx = [0, 0, 1, -1];
@@ -76,15 +94,8 @@ fn main() -> io::Result<()> {
     let mut ans: u32 = 0;
     while !q.is_empty() {
         let (y, x, d) = q.pop_front().unwrap();
-        // q.pop_front();
         let yy: usize = y as usize;
         let xx: usize = x as usize;
-
-        // println!("{y}, {x}");
-
-        // if vis[yy][xx] {
-        //     continue;
-        // }
 
         for (dy, dx) in &dirs[&grid[yy][xx]] {
             let ny = y + dy;
@@ -108,10 +119,114 @@ fn main() -> io::Result<()> {
         }
     }
 
+    let mut direction: Vec<Vec<(i32, i32)>> = vec![vec![(0, 0); m]; n];
+    let mut vis_two: Vec<Vec<bool>> = vec![vec![false; m]; n];
+
+    let mut y = sy;
+    let mut x = sx + 1;
+
+    println!("moi");
+    grid[sy as usize][sx as usize] = 'F';
+    direction[y as usize][x as usize] = (1, 0);
+    println!("{}", grid[y as usize][x as usize]);
+
+    loop {
+
+        let yy: usize = y as usize;
+        let xx: usize = x as usize;
+        vis_two[yy][xx] = true;
+
+        let mut found = false;
+
+        for (ty, tx) in &dirs[&grid[yy][xx]] {
+            let ny: i32 = y + ty;
+            let nx: i32 = x + tx;
+
+            println!("{ny}, {nx}");
+
+            if ny < 0 || ny >= grid.len() as i32 || nx < 0 || nx >= grid[0].len() as i32 {
+                continue;
+            } 
+
+            let ny: usize = ny as usize;
+            let nx: usize = nx as usize;
+
+            if !vis[ny][nx] || vis_two[ny][nx] {
+                continue;
+            }
+
+            found = true;
+            println!("{:?}", direction[yy][xx]);
+            println!("{}", grid[ny][nx]);
+
+            if grid[ny][nx] == '-' || grid[ny][nx] == '|' {
+                direction[ny][nx] = direction[yy][xx];
+            }
+            else { 
+                direction[ny][nx] = vector_rotations[&(direction[yy][xx], grid[ny][nx])];
+            }
+
+            y = ny as i32;
+            x = nx as i32;
+            break;
+        }
+        if !found {
+            break;
+        }
+    }
+
+    println!("Calculating answer...");
+    let mut ans2 = 0;
+    for (i, line) in grid.iter().enumerate() {
+        let mut am = 0;
+        for (j, c) in line.iter().enumerate() {
+
+            // println!("{i}, {j}");
+
+            if vis[i][j] && (grid[i][j] == '-' || grid[i][j] == '|') {
+                if direction[i][j] == (0, 1) {
+                    am += 1;
+                }
+                if direction[i][j] == (0, -1) {
+                    am -= 1;
+                }
+            } else if !vis[i][j] {
+                if am != 0 {
+                    ans2 += 1;
+                    println!("{i}, {j}");
+                }
+            }
+
+            assert!(am < 2);
+        }
+    }
+    println!("{ans2}");
+
+
+    for i in 0..n {
+        for j in 0..m {
+            if !vis[i][j] {
+                // print!("#");
+            } else {
+                // print!("{}", grid[i][j]);
+            }
+        }
+        // println!();
+    }
+
     println!("{ans}");
 
     Ok(())
 }
+
+
+// fn part2(vis: &Vec<Vec<bool>>, ) -> u32 {
+
+
+
+//     let mut ans: u32 = 0;
+//     ans
+// }
 
 
 
